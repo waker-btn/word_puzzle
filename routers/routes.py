@@ -15,14 +15,14 @@ async def health_check(request: Request):
     return {"status": "ok"}
 
 
-@router.post("/games/start")
+@router.post("/games")
 def start_game(
     new_game_request: NewGameRequest, session: Session = Depends(get_session)
 ) -> NewGameResponse:
     return start_game_controller(new_game_request, session)
 
 
-@router.post("/games/{game_id}/guess")
+@router.post("/games/{game_id}/")
 async def make_guess(
     game_id: str, guess_request: GuessRequest, session: Session = Depends(get_session)
 ):
