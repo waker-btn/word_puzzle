@@ -21,3 +21,8 @@ async def init_words():
                     word_entry = Words(word=value)
                     session.add(word_entry)
                 session.commit()
+
+
+def get_session():
+    with Session(engine) as session:
+        yield session

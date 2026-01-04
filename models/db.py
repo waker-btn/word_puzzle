@@ -1,6 +1,5 @@
 import uuid
 from enum import Enum
-from typing import Optional
 from sqlalchemy import Column, Enum as SQLEnum
 from sqlmodel import ARRAY, Field, SQLModel, String
 
@@ -25,8 +24,9 @@ class Games(SQLModel, table=True):
     id: uuid.UUID = Field(primary_key=True, default_factory=uuid.uuid4)
     user_id: uuid.UUID = Field(foreign_key="users.id")
     word: str = Field(foreign_key="words.word")
-    attempts: Optional[list] = Field(
-        default=None, sa_column=Column(ARRAY(String, dimensions=2))
+    attempts: list[list[str]] = Field(
+        default_factory=list,
+        sa_column=Column(ARRAY(String, dimensions=2)),
     )
     remaining_attempts: int = Field(default=6)
     game_status: GameStatus = Field(
