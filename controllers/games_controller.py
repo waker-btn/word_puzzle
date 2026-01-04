@@ -1,8 +1,8 @@
-from schemas.games import NewGameRequest, NewGameResponse, GuessRequest, GuessResponse
-from fastapi import Depends, HTTPException
+from fastapi import HTTPException
 from sqlmodel import Session, func, select
-from database import get_session
 from models.db import Games, Words, GameStatus
+from schemas.games import NewGameResponse, GuessResponse
+import uuid
 
 
 def get_random_word(session: Session) -> str:
@@ -11,8 +11,8 @@ def get_random_word(session: Session) -> str:
         return word.word if word else "apple"
 
 
-def start_game(new_game_request: NewGameRequest, session: Session) -> NewGameResponse:
-    new_game = Games(user_id=new_game_request.user_id, word=get_random_word(session))
+def start_game(user_id: uuid.UUID, session: Session) -> NewGameResponse:
+    new_game = Games(user_id=user_id, word=get_random_word(session))
     session.add(new_game)
     session.commit()
     session.refresh(new_game)
@@ -25,48 +25,48 @@ def start_game(new_game_request: NewGameRequest, session: Session) -> NewGameRes
 
 
 def make_guess(
-    game_id: str, guess_request: GuessRequest, session: Session
+    game_id: str, guess: str, user_id: uuid.UUID, session: Session
 ) -> GuessResponse:
 
-    if len(guess_request.guess) != 5:
+    if len(guess) != 5:
         raise HTTPException(status_code=400, detail="Guess must be 5 characters")
 
-    # get the word
+    # Get the game
     game = session.exec(select(Games).where(Games.id == game_id)).first()
 
     if game is None:
         raise HTTPException(status_code=404, detail="Game not found")
+
+    if game.user_id != user_id:
+        raise HTTPException(status_code=403, detail="Not authorized to play this game")
+
     if game.game_status != "ongoing":
         raise HTTPException(status_code=400, detail="Game is not ongoing")
 
-    # check the guess
-    guess_array = list(guess_request.guess.lower())
+    # Check the guess
+    guess_array = list(guess.lower())
     game_array = list(game.word.lower())
     attempt = ""
 
     for guess_char, game_char in zip(guess_array, game_array):
         if guess_char == game_char:
-            # correct position
-            attempt += "2"
+            attempt += "2"  # Correct position
         elif guess_char in game_array:
-            # wrong position
-            attempt += "1"
+            attempt += "1"  # Wrong position
         else:
-            # not in word
-            attempt += "0"
+            attempt += "0"  # Not in word
 
-    # create attempt
-    game.attempts = game.attempts + [[guess_request.guess, attempt]]
+    # Store attempt
+    game.attempts = game.attempts + [[guess, attempt]]
 
-    # update game status
-    # check win/loss
+    # Update game status
     game.remaining_attempts -= 1
     if attempt == "22222":
         game.game_status = GameStatus.won
     elif game.remaining_attempts == 0:
         game.game_status = GameStatus.lost
 
-    # update db
+    # Save to database
     session.add(game)
     session.commit()
     session.refresh(game)

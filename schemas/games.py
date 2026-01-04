@@ -5,12 +5,11 @@ from models.db import GameStatus
 
 
 class NewGameRequest(BaseModel):
-    user_id: uuid.UUID
+    pass  # No fields needed - user_id comes from JWT auth
 
 
 class GuessRequest(BaseModel):
     guess: str = Field(max_length=5, min_length=5)
-    user_id: uuid.UUID
 
 
 class NewGameResponse(BaseModel):
