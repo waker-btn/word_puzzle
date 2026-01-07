@@ -46,15 +46,24 @@ def make_guess(
     # Check the guess
     guess_array = list(guess.lower())
     game_array = list(game.word.lower())
-    attempt = ""
+    attempt = ["0"] * 5
+    remaining_letters = list(game.word.lower())
 
-    for guess_char, game_char in zip(guess_array, game_array):
+    # First pass: mark correct positions (2s)
+    for i, (guess_char, game_char) in enumerate(zip(guess_array, game_array)):
         if guess_char == game_char:
-            attempt += "2"  # Correct position
-        elif guess_char in game_array:
-            attempt += "1"  # Wrong position
-        else:
-            attempt += "0"  # Not in word
+            attempt[i] = "2"
+            remaining_letters[i] = ""  # Mark this letter as used
+
+    # Second pass: mark wrong positions (1s)
+    for i, guess_char in enumerate(guess_array):
+        if attempt[i] == "0":  # Not already marked as correct
+            if guess_char in remaining_letters:
+                attempt[i] = "1"
+                # Remove the first occurrence of this letter from remaining
+                remaining_letters[remaining_letters.index(guess_char)] = ""
+
+    attempt = "".join(attempt)
 
     # Store attempt
     game.attempts = game.attempts + [[guess, attempt]]
