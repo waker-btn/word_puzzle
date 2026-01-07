@@ -8,20 +8,29 @@ import uuid
 def get_random_word(session: Session) -> str:
     with session:
         word = session.exec(select(Words).order_by(func.random())).first()
-        return word.word if word else "apple"
+        if not word:
+            raise HTTPException(
+                status_code=500,
+                detail="No words available in database. Please contact administrator.",
+            )
+        return word.word
 
 
 def start_game(user_id: uuid.UUID, session: Session) -> NewGameResponse:
-    new_game = Games(user_id=user_id, word=get_random_word(session))
-    session.add(new_game)
-    session.commit()
-    session.refresh(new_game)
+    try:
+        new_game = Games(user_id=user_id, word=get_random_word(session))
+        session.add(new_game)
+        session.commit()
+        session.refresh(new_game)
 
-    return NewGameResponse(
-        game_id=new_game.id,
-        remaining_attempts=new_game.remaining_attempts,
-        game_status=new_game.game_status,
-    )
+        return NewGameResponse(
+            game_id=new_game.id,
+            remaining_attempts=new_game.remaining_attempts,
+            game_status=new_game.game_status,
+        )
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail="Failed to create game")
 
 
 def make_guess(
@@ -30,6 +39,9 @@ def make_guess(
 
     if len(guess) != 5:
         raise HTTPException(status_code=400, detail="Guess must be 5 characters")
+
+    if not guess.isalpha():
+        raise HTTPException(status_code=400, detail="Guess must contain only letters")
 
     # Get the game
     game = session.exec(select(Games).where(Games.id == game_id)).first()
@@ -76,9 +88,13 @@ def make_guess(
         game.game_status = GameStatus.lost
 
     # Save to database
-    session.add(game)
-    session.commit()
-    session.refresh(game)
+    try:
+        session.add(game)
+        session.commit()
+        session.refresh(game)
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail="Failed to save game state")
 
     return GuessResponse(
         remaining_attempts=game.remaining_attempts,

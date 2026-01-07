@@ -22,9 +22,16 @@ def register_user(user_data: UserRegister, session: Session) -> UserResponse:
     hashed_pw = hash_password(user_data.password)
     new_user = Users(email=user_data.email, password=hashed_pw)
 
-    session.add(new_user)
-    session.commit()
-    session.refresh(new_user)
+    try:
+        session.add(new_user)
+        session.commit()
+        session.refresh(new_user)
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create user",
+        )
 
     return UserResponse(id=new_user.id, email=new_user.email)
 

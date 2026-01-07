@@ -46,7 +46,12 @@ def verify_access_token(token: str) -> uuid.UUID | None:
         )
         user_id: str | None = payload.get("sub")
         if user_id is None:
+            print("JWT token missing 'sub' claim")
             return None
         return uuid.UUID(user_id)
-    except JWTError:
+    except JWTError as e:
+        print(f"JWT validation failed: {type(e).__name__}")
+        return None
+    except ValueError as e:
+        print(f"Invalid UUID in JWT token: {e}")
         return None

@@ -15,7 +15,8 @@ async def lifespan(app: FastAPI):
         print("Database connected successfully!")
         await init_words()
     except Exception as e:
-        print(f"Database connection failed: {e}")
+        print(f"FATAL: Database connection failed: {e}")
+        raise
 
     yield
     print("Shutting down...")
