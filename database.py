@@ -5,7 +5,14 @@ from models.db import Words
 
 database_url = f"postgresql://{settings.DATABASE_USER}:{settings.DATABASE_PW}@{settings.DATABASE_HOSTNAME}:{settings.DATABASE_PORT}/{settings.DATABASE_NAME}"
 
-engine = create_engine(database_url, echo=settings.APP_ENV == "development")
+engine = create_engine(
+    database_url,
+    echo=settings.APP_ENV == "development",
+    pool_size=20,
+    max_overflow=10,
+    pool_timeout=30,
+    pool_pre_ping=True,  # Verify connection is alive before using it
+)
 
 
 async def init_words():
