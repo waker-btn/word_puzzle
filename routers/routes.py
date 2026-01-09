@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends
 from sqlmodel import Session
-from schemas.games import GuessRequest, NewGameResponse
+from schemas.games import GuessRequest, GameResponse
 from schemas.auth import UserRegister, UserLogin, Token, UserResponse
 from controllers.games_controller import (
-    start_game as start_game_controller,
+    get_today_game,
     make_guess as make_guess_controller,
 )
 from controllers.auth_controller import register_user, login_user
@@ -29,19 +29,18 @@ def login(user_data: UserLogin, session: Session = Depends(get_session)):
     return login_user(user_data, session)
 
 
-@router.post("/games")
-def start_game(
+@router.get("/games/words")
+def get_game(
     session: Session = Depends(get_session),
     current_user: Users = Depends(get_current_user),
-) -> NewGameResponse:
-    return start_game_controller(current_user.id, session)
+) -> GameResponse:
+    return get_today_game(current_user.id, session)
 
 
-@router.post("/games/{game_id}")
+@router.post("/games/words")
 def make_guess(
-    game_id: str,
     guess_request: GuessRequest,
     session: Session = Depends(get_session),
     current_user: Users = Depends(get_current_user),
 ):
-    return make_guess_controller(game_id, guess_request.guess, current_user.id, session)
+    return make_guess_controller(guess_request.guess, current_user.id, session)

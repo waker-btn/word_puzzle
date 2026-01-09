@@ -1,6 +1,8 @@
 from sqlmodel import Session, select, create_engine
 from settings import settings
 import requests
+import random
+from datetime import date, timedelta
 from models.db import Words
 
 database_url = f"postgresql://{settings.DATABASE_USER}:{settings.DATABASE_PW}@{settings.DATABASE_HOSTNAME}:{settings.DATABASE_PORT}/{settings.DATABASE_NAME}"
@@ -22,7 +24,7 @@ async def init_words():
             if not word_exists:
                 print("Fetching initial word list...")
                 response = requests.get(
-                    "https://random-word-api.herokuapp.com/word?length=5&number=1000",
+                    "https://random-word-api.herokuapp.com/all",
                     timeout=10,
                 )
                 response.raise_for_status()
@@ -31,11 +33,23 @@ async def init_words():
                 if not values or not isinstance(values, list):
                     raise ValueError("Invalid response format from word API")
 
-                for value in values:
-                    word_entry = Words(word=value)
+                valid_words = [
+                    word for word in values if len(word) == 5 and word.isalpha()
+                ]
+
+                random.shuffle(valid_words)
+
+                # Assign sequential dates starting from today
+                start_date = date.today()
+
+                for i, value in enumerate(valid_words):
+                    word_date = start_date + timedelta(days=i)
+                    word_entry = Words(word=value, date=word_date)
                     session.add(word_entry)
                 session.commit()
-                print(f"Successfully loaded {len(values)} words")
+                print(
+                    f"Successfully loaded {len(valid_words)} words starting from {start_date}"
+                )
         except requests.RequestException as e:
             print(f"Failed to fetch words from API: {e}")
             print("Consider pre-loading words manually")

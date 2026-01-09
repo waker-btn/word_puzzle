@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     JWT_SECRET_KEY: str
     JWT_ALGORITHM: str = "HS256"
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    RATE_LIMIT: str  # Format: "10/minute", "100/hour"
 
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", extra="forbid"

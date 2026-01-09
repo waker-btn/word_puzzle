@@ -1,41 +1,51 @@
+from datetime import date
 from fastapi import HTTPException
 from sqlmodel import Session, func, select
 from models.db import Games, Words, GameStatus
-from schemas.games import NewGameResponse, GuessResponse
+from schemas.games import GameResponse, GuessResponse
 import uuid
 
 
-def get_random_word(session: Session) -> str:
-    with session:
-        word = session.exec(select(Words).order_by(func.random())).first()
-        if not word:
-            raise HTTPException(
-                status_code=500,
-                detail="No words available in database. Please contact administrator.",
-            )
-        return word.word
+def get_today_game(user_id: uuid.UUID, session: Session) -> GameResponse:
+    today = date.today()
+    today_game = session.exec(
+        select(Games).where(Games.date == today).where(Games.user_id == user_id)
+    ).first()
+    if today_game:
+        return GameResponse(
+            game_id=today_game.id,
+            remaining_attempts=today_game.remaining_attempts,
+            game_status=today_game.game_status,
+        )
+    return start_game(user_id, session, today)
 
 
-def start_game(user_id: uuid.UUID, session: Session) -> NewGameResponse:
+def start_game(user_id: uuid.UUID, session: Session, date_today: date) -> GameResponse:
     try:
-        new_game = Games(user_id=user_id, word=get_random_word(session))
+        today_word = session.exec(select(Words).where(Words.date == date_today)).first()
+        if not today_word:
+            raise HTTPException(
+                status_code=404, detail=f"No word available for {date_today}"
+            )
+        new_game = Games(user_id=user_id, date=date_today, word=today_word.word)
         session.add(new_game)
         session.commit()
         session.refresh(new_game)
 
-        return NewGameResponse(
+        return GameResponse(
             game_id=new_game.id,
             remaining_attempts=new_game.remaining_attempts,
             game_status=new_game.game_status,
         )
+    except HTTPException:
+        raise
     except Exception as e:
         session.rollback()
-        raise HTTPException(status_code=500, detail="Failed to create game")
+        print(f"Error creating game: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to create game: {str(e)}")
 
 
-def make_guess(
-    game_id: str, guess: str, user_id: uuid.UUID, session: Session
-) -> GuessResponse:
+def make_guess(guess: str, user_id: uuid.UUID, session: Session) -> GuessResponse:
 
     if len(guess) != 5:
         raise HTTPException(status_code=400, detail="Guess must be 5 characters")
@@ -43,17 +53,31 @@ def make_guess(
     if not guess.isalpha():
         raise HTTPException(status_code=400, detail="Guess must contain only letters")
 
+    valid_word = session.exec(select(Words).where(Words.word == guess.lower())).first()
+    if not valid_word:
+        raise HTTPException(status_code=400, detail="Not a valid word")
+
     # Get the game
-    game = session.exec(select(Games).where(Games.id == game_id)).first()
+    game = session.exec(
+        select(Games).where(Games.date == date.today()).where(Games.user_id == user_id)
+    ).first()
 
     if game is None:
-        raise HTTPException(status_code=404, detail="Game not found")
-
-    if game.user_id != user_id:
-        raise HTTPException(status_code=403, detail="Not authorized to play this game")
+        raise HTTPException(
+            status_code=404,
+            detail="No game found for today. Please GET /games/words to start today's game first.",
+        )
 
     if game.game_status != "ongoing":
-        raise HTTPException(status_code=400, detail="Game is not ongoing")
+        # Return current game state without processing guess
+        return GuessResponse(
+            remaining_attempts=game.remaining_attempts,
+            game_status=game.game_status,
+            game_id=game.id,
+            attempt=game.attempts[-1] if game.attempts else ["", ""],
+            attempts=game.attempts,
+            word=game.word,
+        )
 
     # Check the guess
     guess_array = list(guess.lower())
@@ -102,4 +126,5 @@ def make_guess(
         game_id=game.id,
         attempt=game.attempts[-1],
         attempts=game.attempts,
+        word=game.word if game.game_status != GameStatus.ongoing else "Unknown",
     )
