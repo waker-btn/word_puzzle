@@ -17,7 +17,7 @@ async def lifespan(app: FastAPI):
         # Create tables if they don't exist
         create_db_and_tables()
         print("Database tables created/verified")
-        
+
         with Session(engine) as session:
             # Test database connection
             session.exec(select(1)).first()

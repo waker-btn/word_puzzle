@@ -2,6 +2,10 @@
 
 A Wordle-style daily word guessing game API built with FastAPI. Players get 6 attempts to guess a 5-letter word, with feedback after each guess.
 
+**🌐 Live API:** https://word-puzzle.up.railway.app
+
+**📚 API Documentation:** https://word-puzzle.up.railway.app/docs
+
 ## What it does
 
 - Daily 5-letter word puzzle (new word each day)
@@ -29,6 +33,7 @@ cp .env.example .env
 ```
 
 Required variables:
+
 ```env
 APP_ENV=development
 DATABASE_HOSTNAME=localhost
@@ -46,6 +51,7 @@ RATE_LIMIT=10/minute
 ### 2. Install Dependencies
 
 Using Poetry:
+
 ```bash
 poetry install
 poetry shell
@@ -54,6 +60,7 @@ poetry shell
 ### 3. Set Up PostgreSQL
 
 Create an empty database:
+
 ```bash
 createdb word_puzzle
 ```
@@ -107,6 +114,7 @@ curl -X POST http://localhost:8000/games/words \
 ```
 
 Response includes:
+
 - `attempt`: Your guess and the feedback (e.g., `["crane", "01220"]`)
 - `remaining_attempts`: How many guesses left
 - `game_status`: `ongoing`, `won`, or `lost`
@@ -115,12 +123,14 @@ Response includes:
 ## How the Feedback Works
 
 Each guess returns a 5-character string:
+
 - `2` = Letter is correct and in the right spot (🟩)
-- `1` = Letter is in the word but wrong spot (🟨)  
+- `1` = Letter is in the word but wrong spot (🟨)
 - `0` = Letter is not in the word (⬜)
 
 Example: If the word is "SWEET" and you guess "STALE":
-- Result: `"21001"` 
+
+- Result: `"21001"`
 - S=2 (correct!), T=1 (in word, wrong spot), A=0 (not in word), L=0, E=1 (in word, wrong spot)
 
 ## Project Structure
