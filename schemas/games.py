@@ -12,6 +12,7 @@ class GameResponse(BaseModel):
     game_id: uuid.UUID
     remaining_attempts: int
     game_status: GameStatus
+    attempts: list[list[str]] = Field(default_factory=list)
 
 
 class GuessResponse(BaseModel):

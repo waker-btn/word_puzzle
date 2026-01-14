@@ -16,6 +16,7 @@ def get_today_game(user_id: uuid.UUID, session: Session) -> GameResponse:
             game_id=today_game.id,
             remaining_attempts=today_game.remaining_attempts,
             game_status=today_game.game_status,
+            attempts=today_game.attempts,
         )
     return start_game(user_id, session, today)
 
