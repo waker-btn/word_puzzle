@@ -31,11 +31,16 @@ cp .env.example .env
 Required variables:
 ```env
 APP_ENV=development
+
 DATABASE_HOSTNAME=localhost
 DATABASE_PORT=5432
 DATABASE_USER=your_user
 DATABASE_PW=your_password
 DATABASE_NAME=word_puzzle
+
+or
+
+DATABASE_URL=
 
 JWT_SECRET_KEY=your-secret-key  # Run: openssl rand -hex 32
 JWT_ALGORITHM=HS256
