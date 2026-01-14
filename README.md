@@ -2,6 +2,8 @@
 
 A Wordle-style daily word guessing game API built with FastAPI. Players get 6 attempts to guess a 5-letter word, with feedback after each guess.
 
+Frontend in progress!
+
 **🌐 Live API:** https://word-puzzle.up.railway.app
 
 **📚 API Documentation:** https://word-puzzle.up.railway.app/docs
