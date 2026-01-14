@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 from sqlmodel import Session
-from schemas.games import GuessRequest, GameResponse
+from schemas.games import GuessRequest, GameResponse, GuessResponse
 from schemas.auth import UserRegister, UserLogin, Token, UserResponse
 from controllers.games_controller import (
     get_today_game,
@@ -41,7 +41,7 @@ def get_game(
     return get_today_game(current_user.id, session)
 
 
-@router.post("/games/words", tags=["Game"])
+@router.post("/games/words", response_model=GuessResponse, tags=["Game"])
 def make_guess(
     guess_request: GuessRequest,
     session: Session = Depends(get_session),
