@@ -1,11 +1,15 @@
-from sqlmodel import Session, select, create_engine
+from sqlmodel import Session, select, create_engine, SQLModel
 from settings import settings
 import requests
 import random
 from datetime import date, timedelta
 from models.db import Words
 
-database_url = f"postgresql://{settings.DATABASE_USER}:{settings.DATABASE_PW}@{settings.DATABASE_HOSTNAME}:{settings.DATABASE_PORT}/{settings.DATABASE_NAME}"
+# Railway provides DATABASE_URL directly, otherwise build from components
+if settings.DATABASE_URL:
+    database_url = settings.DATABASE_URL
+else:
+    database_url = f"postgresql://{settings.DATABASE_USER}:{settings.DATABASE_PW}@{settings.DATABASE_HOSTNAME}:{settings.DATABASE_PORT}/{settings.DATABASE_NAME}"
 
 engine = create_engine(
     database_url,
@@ -15,6 +19,11 @@ engine = create_engine(
     pool_timeout=30,
     pool_pre_ping=True,  # Verify connection is alive before using it
 )
+
+
+def create_db_and_tables():
+    """Create all database tables"""
+    SQLModel.metadata.create_all(engine)
 
 
 async def init_words():
