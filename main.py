@@ -46,7 +46,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",  # Vite default
-        # Prod URL
+        "https://word-puzzle-frontend.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
