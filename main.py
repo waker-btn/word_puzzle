@@ -56,4 +56,4 @@ app.add_middleware(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore
 
-app.include_router(router)
+app.include_router(router, prefix="/api")

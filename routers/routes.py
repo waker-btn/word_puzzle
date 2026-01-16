@@ -34,13 +34,13 @@ def login(
     """Login and receive an access token"""
     result = login_user(user_data, session)
 
-    # Set cookie for cross-origin (Vercel <-> Railway)
+    # Set cookie (customize parameters as needed)
     response.set_cookie(
         key="refresh_token",
         value=result.refresh_token,
         httponly=True,  # Prevents JavaScript access
-        secure=True,  # Required for samesite=none
-        samesite="none",  # Required for cross-origin
+        secure=True,  # Only send over HTTPS
+        samesite="none",  # CSRF protection
         max_age=7 * 24 * 60 * 60,  # 7 days in seconds
     )
 
@@ -60,9 +60,7 @@ def refresh_token(refresh_token: str = Cookie(None)):
 def logout(response: Response):
     """Logout user by clearing the refresh token cookie"""
     response.delete_cookie(
-        key="refresh_token",
-        secure=True,
-        samesite="none"
+        key="refresh_token", httponly=True, secure=True, samesite="none"
     )
     return {"detail": "Logged out successfully"}
 
