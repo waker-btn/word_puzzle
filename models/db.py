@@ -19,7 +19,7 @@ class Words(SQLModel, table=True):
 
 class Users(SQLModel, table=True):
     id: uuid.UUID = Field(primary_key=True, default_factory=uuid.uuid4)
-    email: str = Field(max_length=100, unique=True)
+    username: str = Field(max_length=100, unique=True)
     password: str = Field(max_length=100)
 
 

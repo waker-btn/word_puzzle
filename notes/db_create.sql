@@ -1,6 +1,6 @@
 CREATE TABLE "users" (
   "id" uuid PRIMARY KEY DEFAULT (gen_random_uuid()),
-  "email" text UNIQUE NOT NULL,
+  "username" text UNIQUE NOT NULL,
   "password" text NOT NULL
 );
 

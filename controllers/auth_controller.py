@@ -10,17 +10,18 @@ from settings import settings
 def register_user(user_data: UserRegister, session: Session) -> UserResponse:
     # Check if user already exists
     existing_user = session.exec(
-        select(Users).where(Users.email == user_data.email)
+        select(Users).where(Users.username == user_data.username)
     ).first()
 
     if existing_user:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered"
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username already registered",
         )
 
     # Create new user with hashed password
     hashed_pw = hash_password(user_data.password)
-    new_user = Users(email=user_data.email, password=hashed_pw)
+    new_user = Users(username=user_data.username, password=hashed_pw)
 
     try:
         session.add(new_user)
@@ -33,17 +34,19 @@ def register_user(user_data: UserRegister, session: Session) -> UserResponse:
             detail="Failed to create user",
         )
 
-    return UserResponse(id=new_user.id, email=new_user.email)
+    return UserResponse(id=new_user.id, username=new_user.username)
 
 
 def login_user(user_data: UserLogin, session: Session) -> Token:
-    # Find user by email
-    user = session.exec(select(Users).where(Users.email == user_data.email)).first()
+    # Find user by username
+    user = session.exec(
+        select(Users).where(Users.username == user_data.username)
+    ).first()
 
     if not user or not verify_password(user_data.password, user.password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
+            detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
