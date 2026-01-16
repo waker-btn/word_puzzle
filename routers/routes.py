@@ -1,15 +1,16 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, Response, Cookie
 from sqlmodel import Session
 from schemas.games import GuessRequest, GameResponse, GuessResponse
-from schemas.auth import UserRegister, UserLogin, Token, UserResponse
+from schemas.auth import UserRegister, UserLogin, AccessToken, UserResponse
 from controllers.games_controller import (
     get_today_game,
     make_guess as make_guess_controller,
 )
-from controllers.auth_controller import register_user, login_user
+from controllers.auth_controller import register_user, login_user, refresh_access_token
 from database import get_session
 from dependencies.auth import get_current_user
 from models.db import Users
+from settings import settings
 
 router = APIRouter()
 
@@ -26,10 +27,44 @@ def register(user_data: UserRegister, session: Session = Depends(get_session)):
     return register_user(user_data, session)
 
 
-@router.post("/login", response_model=Token, tags=["Authentication"])
-def login(user_data: UserLogin, session: Session = Depends(get_session)):
+@router.post("/login", response_model=AccessToken, tags=["Authentication"])
+def login(
+    user_data: UserLogin, response: Response, session: Session = Depends(get_session)
+):
     """Login and receive an access token"""
-    return login_user(user_data, session)
+    result = login_user(user_data, session)
+
+    # Set cookie for cross-origin (Vercel <-> Railway)
+    response.set_cookie(
+        key="refresh_token",
+        value=result.refresh_token,
+        httponly=True,  # Prevents JavaScript access
+        secure=True,  # Required for samesite=none
+        samesite="none",  # Required for cross-origin
+        max_age=7 * 24 * 60 * 60,  # 7 days in seconds
+    )
+
+    return AccessToken(access_token=result.access_token)
+
+
+@router.post("/refresh-token", response_model=AccessToken, tags=["Authentication"])
+def refresh_token(refresh_token: str = Cookie(None)):
+    """Refresh access token using refresh token from cookie"""
+    if not refresh_token:
+        raise HTTPException(status_code=401, detail="Refresh token missing")
+    new_access_token = refresh_access_token(refresh_token)
+    return new_access_token
+
+
+@router.post("/logout", tags=["Authentication"])
+def logout(response: Response):
+    """Logout user by clearing the refresh token cookie"""
+    response.delete_cookie(
+        key="refresh_token",
+        secure=True,
+        samesite="none"
+    )
+    return {"detail": "Logged out successfully"}
 
 
 @router.get("/games/words", tags=["Game"])
